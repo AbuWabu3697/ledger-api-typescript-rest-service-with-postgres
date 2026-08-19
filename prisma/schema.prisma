@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accounts     Account[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  name         String
+  type         AccountType
+  currency     String        @default("USD")
+  balanceCents BigInt        @default(0)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  debitLines   TransactionLine[] @relation("DebitAccount")
+  creditLines  TransactionLine[] @relation("CreditAccount")
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  description String
+  amountCents BigInt
+  date        DateTime
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  lines       TransactionLine[]
+
+  @@map("transactions")
+}
+
+/// Each transaction has exactly two lines: one debit and one credit (normalized double-entry).
+model TransactionLine {
+  id            String      @id @default(uuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  debitAccountId  String
+  debitAccount    Account   @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId String
+  creditAccount   Account   @relation("CreditAccount", fields: [creditAccountId], references: [id])
+
+  @@unique([transactionId])
+  @@index([debitAccountId])
+  @@index([creditAccountId])
+  @@map("transaction_lines")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
