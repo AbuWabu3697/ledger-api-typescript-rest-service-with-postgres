@@ -51,7 +51,18 @@
     "testEnvironment": "node",
     "roots": ["<rootDir>/src"],
     "testMatch": ["**/__tests__/**/*.ts", "**/*.test.ts"],
-    "collectCoverageFrom": ["src/**/*.ts", "!src/**/*.d.ts"]
+    "setupFiles": ["<rootDir>/src/jest.setup.ts"],
+    "collectCoverageFrom": [
+      "src/services/**/*.ts",
+      "src/middleware/**/*.ts",
+      "src/routes/**/*.ts",
+      "!src/**/*.d.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 70
+      }
+    }
   },
   "engines": {
     "node": ">=18"
